@@ -1,5 +1,6 @@
 package com.github.nosh11.ekidensys.runner;
 
+import com.github.nosh11.ekidensys.EkidenSys;
 import com.github.nosh11.ekidensys.course.Course;
 import com.github.nosh11.ekidensys.course.CourseManager;
 import com.github.nosh11.ekidensys.course.Point;
@@ -28,15 +29,15 @@ public class RunnerNavi {
     }
 
     public boolean check(Location loc) {
-        Location next = next().getLocation();
+        Point next_point = next();
+        if (next_point == null) return false;
+        Location next = next_point.getLocation();
         double distance = Calc.getDistance(loc, next);
+        EkidenSys.getInstance().getLogger().info(String.valueOf(distance));
+        return distance <= 2.5d;
+    }
 
-        // 次のポイントとの距離が 2.5 ブロック未満 -> 次のポイントにターゲットを変更する
-        if (distance <= 2.5d) {
-            current ++;
-            return true;
-        }
-
-        return false;
+    public void add() {
+        current ++;
     }
 }

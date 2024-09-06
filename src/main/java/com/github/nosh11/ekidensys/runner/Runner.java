@@ -1,7 +1,10 @@
 package com.github.nosh11.ekidensys.runner;
 
+import com.github.nosh11.ekidensys.EkidenSys;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
+import net.citizensnpcs.api.trait.Trait;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.EntityType;
 
 public class Runner {
@@ -15,14 +18,17 @@ public class Runner {
         this.hp = hp;
         this.npc = CitizensAPI.getNPCRegistry().createNPC(EntityType.PLAYER, displayName);
         this.navi = new RunnerNavi(course_id);
-        this.npc.spawn(this.navi.origin().getLocation());
-    }
 
-    public void update() {
-        if (navi.check(npc.getStoredLocation())) {
-            npc.getNavigator().setTarget(
-                    navi.current().getLocation()
-            );
-        }
+        npc.getNavigator().getDefaultParameters().baseSpeed(0.5f);
+        npc.getOrAddTrait(Trait.class);
+        npc.addRunnable(() -> {
+            boolean check = navi.check(npc.getStoredLocation());
+            if (check) {
+                npc.getNavigator().setTarget(navi.next().getLocation());
+                navi.add();
+            }
+        });
+
+        this.npc.spawn(this.navi.origin().getLocation());
     }
 }
