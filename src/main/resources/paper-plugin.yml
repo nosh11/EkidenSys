@@ -1,0 +1,7 @@
+name: EkidenSys
+version: '0.001a'
+main: com.github.nosh11.ekidenSys.EkidenSys
+api-version: '1.20'
+
+depend:
+    - Citizens
