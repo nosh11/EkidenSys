@@ -21,12 +21,13 @@ public class CourseManager {
     public void reload() {
         for (int i = 1; i <= 3; i++) {
             final List<Point> points = new ArrayList<>();
+            final String course_id = "course_" + i;
 
-            File f = new File("plugins/EkidenSys/course_" + i + ".yml");
+            File f = new File("plugins/EkidenSys/" + course_id + ".yml");
             FileConfiguration config = YamlConfiguration.loadConfiguration(f);
 
             if (!config.contains("points")) {
-                course_list.put("course_" + i, new Course(points));
+                course_list.put("course_" + i, new Course(points, course_id));
                 continue;
             }
 
@@ -44,7 +45,15 @@ public class CourseManager {
                 ));
             }
 
-            course_list.put("course_" + i, new Course(points));
+            course_list.put("course_" + i, new Course(points, course_id));
         }
+    }
+
+    public Collection<Course> getAll() {
+        return course_list.values();
+    }
+
+    public boolean contains(String key) {
+        return course_list.containsKey(key);
     }
 }

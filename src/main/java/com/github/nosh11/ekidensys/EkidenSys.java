@@ -1,6 +1,8 @@
 package com.github.nosh11.ekidensys;
 
+import com.github.nosh11.ekidensys.command.CourseCmd;
 import com.github.nosh11.ekidensys.course.CourseManager;
+import com.github.nosh11.ekidensys.runner.RunnerRunnable;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class EkidenSys extends JavaPlugin {
@@ -9,12 +11,18 @@ public final class EkidenSys extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+
         CourseManager.getInstance().reload();
+
+        new CourseCmd(instance);
+        new RunnerRunnable().runTaskTimer(instance, 2L, 2L);
+
+        getLogger().info("hello");
     }
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        getLogger().info("bye");
     }
 
     public static EkidenSys getInstance() {
