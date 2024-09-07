@@ -1,9 +1,11 @@
 package com.github.nosh11.ekidensys.course;
 
+import com.github.nosh11.ekidensys.EkidenSys;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 public class CourseManager {
@@ -26,26 +28,41 @@ public class CourseManager {
             File f = new File("plugins/EkidenSys/" + course_id + ".yml");
             FileConfiguration config = YamlConfiguration.loadConfiguration(f);
 
-            if (!config.contains("points")) {
-                course_list.put("course_" + i, new Course(points, course_id));
+            if (config.getKeys(false).isEmpty()) {
+                course_list.put(course_id, new Course(points, course_id));
                 continue;
             }
 
-            List<String> keys = config.createSection("points")
-                    .getKeys(false)
-                    .stream()
-                    .sorted(Comparator.comparing((x) -> -Integer.parseInt(x)))
-                    .toList();
+            List<String> keys = config.getKeys(false)
+                    .stream().sorted(Comparator.comparing(Integer::parseInt)).toList();
 
             for (String k : keys) {
                 points.add(new Point(
-                        config.getLocation("points." + k + ".location"),
+                        config.getLocation(k + ".location"),
                         Integer.parseInt(k),
-                        config.getBoolean("points." + k + ".is_checkpoint")
+                        config.getBoolean(k + ".is_checkpoint")
                 ));
             }
 
-            course_list.put("course_" + i, new Course(points, course_id));
+            course_list.put(course_id, new Course(points, course_id));
+        }
+    }
+
+    public void save() {
+        for (Course course : course_list.values()) {
+            try {
+                File f = new File("plugins/EkidenSys/" + course.getId() + ".yml");
+                FileConfiguration config = YamlConfiguration.loadConfiguration(f);
+
+                for (Point p : course.getAllPoints()) {
+                    config.set(p.getIndex() + ".is_checkpoint", p.isCheckPoint());
+                    config.set(p.getIndex() + ".location", p.getLocation());
+                }
+
+                config.save(f);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

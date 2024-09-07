@@ -1,5 +1,7 @@
 package com.github.nosh11.ekidensys.runner;
 
+import net.citizensnpcs.api.npc.NPC;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +15,10 @@ public class RunnerManager {
 
     public void add(Runner runner) {
         runner_list.add(runner);
+    }
+
+    public void add(NPC npc) {
+
     }
 
     public Runner get(int i) {

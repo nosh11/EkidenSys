@@ -58,8 +58,10 @@ public class CourseCmd extends Cmd {
                             "Runner",
                             100
                     ));
-
                 }
+
+                case "save" -> CourseManager.getInstance().save();
+                case "reload" -> CourseManager.getInstance().reload();
             }
         }
         return false;
