@@ -20,4 +20,8 @@ public class Point {
     public int getIndex() {
         return this.index;
     }
+
+    public boolean isCheckPoint() {
+        return isCheckPoint;
+    }
 }
