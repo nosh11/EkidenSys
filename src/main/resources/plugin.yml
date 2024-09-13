@@ -7,5 +7,9 @@ depend:
     - Citizens
 
 commands:
-    course:
+    session:
         description: "Course Plugin daze"
+    ekiden:
+        description: "Ekiden"
+    team:
+        description: "Team"

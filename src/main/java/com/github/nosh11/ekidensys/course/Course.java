@@ -1,36 +1,38 @@
 package com.github.nosh11.ekidensys.course;
 
 import org.bukkit.Location;
+import org.bukkit.util.Vector;
 
 import java.util.*;
 
+
+// List<Points> points: 座標の連結リスト。Runnerはこれに従って走ります。
+// id: 識別用ID
+// name: Course の名前
+
 public class Course {
-    private final List<Point> points = new ArrayList<>();
-    private final String id;
+    private final List<Location> locations;
+    private final String name;
 
-    public Course(List<Point> points, String id) {
-        this.points.addAll(points);
-        this.id = id;
+    public Course(List<Location> locations, String name) {
+        this.locations = locations;
+        this.name = name;
     }
-
-    public Point origin() {
-        return points.getFirst();
+    public Location origin() {
+        Random r = new Random();
+        return locations.getFirst().clone().add(new Vector((r.nextDouble()-0.5d)*6, 0, (r.nextDouble()-0.5d)*6));
     }
-
-    public Point getPoint(int i) {
-        if (points.size() <= i) return null;
-        return points.get(i);
+    public Location getPoint(int i) {
+        if (locations.size() <= i) return null;
+        return locations.get(i);
     }
-
-    public String getId() {
-        return this.id;
+    public String getName() {
+        return this.name;
     }
-
-    public List<Point> getAllPoints() {
-        return points;
+    public List<Location> getAllPoints() {
+        return locations;
     }
-
     public void addPoint(Location location) {
-        points.add(new Point(location, points.size(), false));
+        locations.add(location);
     }
 }
