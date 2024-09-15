@@ -11,6 +11,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SessionCmd extends Cmd {
     public SessionCmd(EkidenSys plugin) {
         super(plugin);
@@ -28,7 +31,23 @@ public class SessionCmd extends Cmd {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String s, @NotNull String[] args) {
-        if (args.length >= 1) {
+        if (args.length < 1) {
+            if (EkidenSys.getInstance().isRunning()) {
+                for (ApiTeam team : ApiManager.getInstance().getTeams()) {
+                    StringBuilder sb = new StringBuilder();
+                    int point = team.getCurrentSession().point/1000;
+                    sb.append("■".repeat(Math.max(0, point)));
+                    sender.sendMessage(
+                            "["+team.id+"]" + team.name + " : " +team.getCurrentMember().name
+                    );
+                    sender.sendMessage(
+                            " >> " + point * 1000 + "pt " + sb
+                    );
+                }
+            }
+         }
+
+        else {
             switch (args[0]) {
                 case "addpoint" -> {
                     if (args.length < 3) return false;
@@ -50,7 +69,7 @@ public class SessionCmd extends Cmd {
                     }
                 }
 
-                case "info" -> {
+                case "location" -> {
                     for (int j = 1; j <= 3; j++) {
                         Session session = SessionManager.getInstance().get(j-1);
                         sender.sendMessage(j + "区: ");
@@ -58,6 +77,10 @@ public class SessionCmd extends Cmd {
                             sender.sendMessage(" - " + i + "000点: " + session.getCourse(i-1).getAllPoints().size());
                         }
                     }
+                }
+
+                case "update" -> {
+                    ApiManager.getInstance().update();
                 }
 
                 case "stop" -> {

@@ -19,7 +19,18 @@ public class ApiTeam {
     public List<Integer> memberIds;
     public List<ApiSession> sessions;
     private NPC npc;
+    public float transition;
 
+    public int getId() {
+        return id;
+    }
+
+    public String getColor() {
+        return String.format(
+                "<transition:#ff7777:#77ff77:#7777ff:%.4f>",
+                transition
+        );
+    }
 
 
     public ApiTeam(int id, String name, int rank, int point, long time, List<Integer> memberIds, List<ApiSession> sessions) {
@@ -38,7 +49,16 @@ public class ApiTeam {
         return sessions.get(EkidenSys.getInstance().getCurrentSessionId());
     }
 
+    public NPC getNpc() {
+        return npc;
+    }
+
+    public String getNameWithID() {
+        return "["+id+"] "+ name;
+    }
+
     public void onSuccess() {
+        if (npc == null) return;
         ApiSession session = getCurrentSession();
         RunnerTrait trait = npc.getTraitNullable(RunnerTrait.class);
         trait.setPoint(session.point);
@@ -70,6 +90,7 @@ public class ApiTeam {
 
     public void setNpc(NPC npc) {
         this.npc = npc;
+        npc.getTraitNullable(RunnerTrait.class).setPoint(getCurrentSession().point);
     }
 
     @Override

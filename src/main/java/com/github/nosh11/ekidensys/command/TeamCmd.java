@@ -3,9 +3,14 @@ package com.github.nosh11.ekidensys.command;
 import com.github.nosh11.ekidensys.EkidenSys;
 import com.github.nosh11.ekidensys.api.ApiManager;
 import com.github.nosh11.ekidensys.api.ApiTeam;
+import com.github.nosh11.ekidensys.cameraman.CameraManManager;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Comparator;
 
 public class TeamCmd extends Cmd {
     public TeamCmd(EkidenSys plugin) {
@@ -30,8 +35,10 @@ public class TeamCmd extends Cmd {
         else {
             switch (args[0]) {
                 case "list" -> {
-                    for (ApiTeam team : ApiManager.getInstance().getTeams()) {
-                        sender.sendMessage(team.id + ": " + team.name);
+                    for (ApiTeam team : ApiManager.getInstance().getTeams()
+                            .stream().sorted(Comparator.comparing(ApiTeam::getId)).toList()) {
+                        sender.sendMessage(MiniMessage.miniMessage()
+                                .deserialize(team.getColor() + team.getNameWithID() + " : " + team.getCurrentSession().point));
                     }
                 }
                 case "info" -> {
@@ -39,6 +46,16 @@ public class TeamCmd extends Cmd {
                     ApiTeam team = ApiManager.getInstance().getTeam(Integer.parseInt(args[1]));
                     sender.sendMessage(team.toString());
                 }
+                case "tp" -> {
+                    if (args.length < 2) return false;
+                    ApiTeam team = ApiManager.getInstance().getTeam(Integer.parseInt(args[1]));
+                    if (team != null & sender instanceof Player) {
+                        Player player = (Player) sender;
+                        CameraManManager.getInstance().get(player).setTarget(team, true);
+                    }
+                }
+
+
                 case "setpoint" -> {
                     if (args.length < 3) return false;
                     ApiTeam team = ApiManager.getInstance().getTeam(Integer.parseInt(args[1]));

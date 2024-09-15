@@ -1,6 +1,8 @@
 package com.github.nosh11.ekidensys;
 
 import com.github.nosh11.ekidensys.api.ApiManager;
+import com.github.nosh11.ekidensys.cameraman.CameraManListener;
+import com.github.nosh11.ekidensys.cameraman.CameraManManager;
 import com.github.nosh11.ekidensys.command.SessionCmd;
 import com.github.nosh11.ekidensys.command.EkidenCmd;
 import com.github.nosh11.ekidensys.command.TeamCmd;
@@ -23,7 +25,7 @@ public final class EkidenSys extends JavaPlugin {
 
     private int currentSession = 0;
     private boolean isRunning = false;
-    private final boolean apimode = false;
+    public final boolean apimode = false;
 
     @Override
     public void onEnable() {
@@ -35,6 +37,8 @@ public final class EkidenSys extends JavaPlugin {
 
         SessionManager.getInstance().reload();
         ApiManager.getInstance().reloadAll();
+
+        getServer().getPluginManager().registerEvents(new CameraManListener(), this);
 
         new SessionCmd(this);
         new EkidenCmd(this);
@@ -53,9 +57,19 @@ public final class EkidenSys extends JavaPlugin {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (isRunning & apimode) ApiManager.getInstance().update();
+                if (isRunning) {
+                    ApiManager.getInstance().update();
+                }
             }
-        }.runTaskLater(this, 200L);
+        }.runTaskTimer(this, 200L, 200L);
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                CameraManManager.getInstance().update();
+            }
+        }.runTaskTimer(this, 20L, 20L);
+
         getLogger().info("hello");
     }
 

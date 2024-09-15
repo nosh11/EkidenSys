@@ -4,11 +4,17 @@ import com.github.nosh11.ekidensys.EkidenSys;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.*;
 import java.util.logging.Level;
@@ -24,6 +30,12 @@ public class ApiManager {
     public ApiTeam getTeam(int team_id) {
         return this.teams.get(team_id);
     }
+    public ApiTeam getRandomTeam() {
+        int size = this.teams.size();
+        int team_id = this.teams.keySet().stream().toList().get(new Random().nextInt(size));
+        return this.teams.get(team_id);
+    }
+
     public ApiMember getMember(int member_id) {
         return this.members.get(member_id);
     }
@@ -31,18 +43,32 @@ public class ApiManager {
     public Collection<ApiTeam> getTeams() {
         return teams.values();
     }
+    public JSONObject getJSONWithNoApi() {
+        try {
+            String content = Files.readString(Paths.get("plugins/EkidenSys/test.json"));
+            return new JSONObject(content);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     private static JSONObject sendRequest() {
         try (HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
                 .build()){
             EkidenSys.getInstance().getLogger().info("ooo");
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://ekiden2024.event.techful-programming.com/api/ranking"))
-                    .timeout(Duration.ofSeconds(5))
                     .build();
-            EkidenSys.getInstance().getLogger().info("eee");
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            EkidenSys.getInstance().getLogger().info("iii");
+
+            File f = new File("plugins/EkidenSys/test.json");
+            try (FileWriter filewriter = new FileWriter(f, StandardCharsets.UTF_8)){
+                filewriter.write(response.body());
+            } catch (IOException e) {
+                EkidenSys.getInstance().getLogger().info("かきこみみすった");
+            }
+
             return new JSONObject(response.body());
         } catch (IOException | InterruptedException e) {
             EkidenSys.getInstance().getLogger().log(Level.WARNING, "APIの取得に失敗しました");
@@ -52,7 +78,11 @@ public class ApiManager {
 
     // 試合中 10s毎に呼び出すメソッドです。
     public void update() {
-        JSONObject json = sendRequest();
+        JSONObject json;
+        if (EkidenSys.getInstance().apimode)
+            json = sendRequest();
+        else
+            json = getJSONWithNoApi();
         if (json == null) return;
         JSONArray teamsJson = json.getJSONArray("teams");
 
@@ -63,9 +93,9 @@ public class ApiManager {
             JSONObject teamJson = teamsJson.getJSONObject(i);
             int team_id = teamJson.getInt("id");
             ApiTeam team = teams.get(team_id);
-            int member_id = team.memberIds.get(session_id);
-            ApiMember member = members.get(member_id);
             ApiSession session = team.sessions.get(session_id);
+            ApiMember member = team.getCurrentMember();
+            int member_id = member.id;
 
             JSONObject membersJson = json.getJSONObject("members");
             JSONObject memberJson = membersJson.getJSONObject(String.valueOf(member_id));
@@ -115,6 +145,7 @@ public class ApiManager {
         EkidenSys.getInstance().getLogger().info(members.size() + " members loaded");
 
 
+        int max = 1000;
         JSONArray teamsJson = jsonObject.getJSONArray("teams");
         for (int i = 0; i < teamsJson.length(); i++) {
             JSONObject teamJson = teamsJson.getJSONObject(i);
@@ -155,9 +186,15 @@ public class ApiManager {
                 sessions.add(new ApiSession(memberId, sessionPoint, sessionTime, levels, prizeCount));
             }
 
+            if (max < id) max = id;
             ApiTeam team = new ApiTeam(id, name, rank, point, time, memberIds, sessions);
             teams.put(id, team);
         }
+
+        for (ApiTeam team : teams.values()) {
+            team.transition = (team.id - 1000f) / (max - 1000f);
+        }
+
         EkidenSys.getInstance().getLogger().info(teams.size() + " teams loaded");
 
     }

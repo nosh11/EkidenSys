@@ -3,6 +3,7 @@ package com.github.nosh11.ekidensys.runner;
 import com.github.nosh11.ekidensys.EkidenSys;
 import com.github.nosh11.ekidensys.api.ApiManager;
 import com.github.nosh11.ekidensys.api.ApiTeam;
+import com.github.nosh11.ekidensys.cameraman.CameraManManager;
 import com.github.nosh11.ekidensys.course.Course;
 import com.github.nosh11.ekidensys.session.SessionManager;
 import com.github.nosh11.ekidensys.util.Calc;
@@ -31,9 +32,12 @@ public class RunnerTrait extends Trait {
     public void back() {
         this.point = 0;
         npc.getNavigator().cancelNavigation();
+        if (npc.isSpawned())
+            npc.teleport(getCurrentCourse().origin(), PlayerTeleportEvent.TeleportCause.PLUGIN);
+        else
+            npc.spawn(getCurrentCourse().origin());
         if (getCurrentCourse().getPoint(point + 1) != null)
             updateTarget(getCurrentCourse().getPoint(point + 1));
-        npc.teleport(getCurrentCourse().origin(), PlayerTeleportEvent.TeleportCause.PLUGIN);
     }
 
     public void init(int team_id) {
@@ -61,8 +65,10 @@ public class RunnerTrait extends Trait {
     }
 
     public void setPoint(int point) {
-        this.current_course = point /1000;
-        back();
+        if (this.current_course != point / 1000) {
+            this.current_course = point / 1000;
+            back();
+        }
     }
 
 
@@ -98,6 +104,8 @@ public class RunnerTrait extends Trait {
     private void updateTarget(Location location) {
         Random r = new Random();
         Location next = location.clone().add(new Vector((r.nextDouble()-0.5d)*2.5, 0, (r.nextDouble()-0.5d)*2.5));
+        if (!npc.isSpawned())
+            npc.spawn(npc.getStoredLocation());
         npc.getNavigator().setTarget(next);
     }
 
@@ -105,7 +113,11 @@ public class RunnerTrait extends Trait {
     public void click(net.citizensnpcs.api.event.NPCRightClickEvent event) {
         if (event.getNPC() != npc) return;
         RunnerTrait trait = event.getNPC().getTraitNullable(RunnerTrait.class);
+
+        ApiTeam team = ApiManager.getInstance().getTeam(trait.team_id);
+        if (team == null) return;
         event.getClicker().sendMessage(String.format("チームID: %d", trait.team_id));
+        CameraManManager.getInstance().get(event.getClicker()).setTarget(team);
     }
 
     @Override
