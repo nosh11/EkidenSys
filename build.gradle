@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.github.nosh11'
-version = '0.001a'
+version = '0.001b'
 
 repositories {
     mavenCentral()
@@ -36,6 +36,11 @@ dependencies {
     }
 
     implementation("org.json:json:20240303")
+
+    // FastBoard
+    implementation('fr.mrmicky:fastboard:2.1.2')
+
+    //
 }
 
 def targetJavaVersion = 22

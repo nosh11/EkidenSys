@@ -1,11 +1,9 @@
 package com.github.nosh11.ekidensys.cameraman;
 
 import com.github.nosh11.ekidensys.EkidenSys;
-import com.github.nosh11.ekidensys.api.ApiSession;
-import com.github.nosh11.ekidensys.api.ApiTeam;
+import com.github.nosh11.ekidensys.api.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.util.HSVLike;
 import org.bukkit.entity.Player;
 
 public class CameraMan {
@@ -15,7 +13,6 @@ public class CameraMan {
     public CameraMan(Player player) {
         this.player = player;
     }
-
     public void update() {
         if (target != null) {
             String transition = target.getColor();
@@ -26,7 +23,7 @@ public class CameraMan {
                             target.name,
                             target.getCurrentMember().name,
                             transition,
-                            "♥".repeat(target.getCurrentMember().stamina),
+                            target.getCurrentMember().getHeart(),
                             target.getCurrentSession().point
                     ))
             );
@@ -36,6 +33,10 @@ public class CameraMan {
                     "試合は開始されていません"
             ));
         }
+    }
+
+    public void sendResult() {
+        player.sendMessage("結果");
     }
 
     public Player getPlayer() {
@@ -58,8 +59,12 @@ public class CameraMan {
         this.target = team;
         if (teleport) {
             player.teleport(target.getNpc().getStoredLocation());
-            player.sendMessage(team.getNameWithID() + " にテレポートしました");
         }
+        sendTeamInfo();
         update();
+    }
+
+    public void sendTeamInfo() {
+        player.sendMessage(target.getComponent());
     }
 }

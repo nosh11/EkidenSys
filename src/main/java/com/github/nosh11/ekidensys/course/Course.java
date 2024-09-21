@@ -19,8 +19,12 @@ public class Course {
         this.name = name;
     }
     public Location origin() {
+        return origin(6);
+    }
+
+    public Location origin(double d) {
         Random r = new Random();
-        return locations.getFirst().clone().add(new Vector((r.nextDouble()-0.5d)*6, 0, (r.nextDouble()-0.5d)*6));
+        return locations.getFirst().clone().add(new Vector((r.nextDouble()-0.5d)*d, 0, (r.nextDouble()-0.5d)*d));
     }
     public Location getPoint(int i) {
         if (locations.size() <= i) return null;

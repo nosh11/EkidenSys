@@ -30,44 +30,63 @@ public class TeamCmd extends Cmd {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
         if (args.length < 1) {
+            for (ApiTeam team : ApiManager.getInstance().getTeams()
+                    .stream().sorted(Comparator.comparing(ApiTeam::getId)).toList()) {
+                sender.sendMessage(MiniMessage.miniMessage()
+                        .deserialize(team.getColor() + team.getNameWithID() + " : " + team.getCurrentSession().point));
+            }
             return false;
         }
-        else {
-            switch (args[0]) {
-                case "list" -> {
-                    for (ApiTeam team : ApiManager.getInstance().getTeams()
-                            .stream().sorted(Comparator.comparing(ApiTeam::getId)).toList()) {
-                        sender.sendMessage(MiniMessage.miniMessage()
-                                .deserialize(team.getColor() + team.getNameWithID() + " : " + team.getCurrentSession().point));
-                    }
-                }
-                case "info" -> {
-                    if (args.length < 2) return false;
-                    ApiTeam team = ApiManager.getInstance().getTeam(Integer.parseInt(args[1]));
-                    sender.sendMessage(team.toString());
-                }
-                case "tp" -> {
-                    if (args.length < 2) return false;
-                    ApiTeam team = ApiManager.getInstance().getTeam(Integer.parseInt(args[1]));
-                    if (team != null & sender instanceof Player) {
-                        Player player = (Player) sender;
-                        CameraManManager.getInstance().get(player).setTarget(team, true);
-                    }
-                }
 
+        else if (args.length < 2) return false;
+        ApiTeam team = ApiManager.getInstance().getTeam(Integer.parseInt(args[1]));
+        if (team == null) {
+            sender.sendMessage("そのチームは存在しません");
+            return false;
+        }
 
-                case "setpoint" -> {
-                    if (args.length < 3) return false;
-                    ApiTeam team = ApiManager.getInstance().getTeam(Integer.parseInt(args[1]));
-                    team.getCurrentSession().point = Integer.parseInt(args[2]);
-                    team.onSuccess();
+        switch (args[0]) {
+            case "info" -> sender.sendMessage(team.getComponent());
+            case "set_point" -> {
+                if (EkidenSys.getInstance().apiMode) {
+                    sender.sendMessage("APIMode がTrueのとき これは実行できません");
+                    return false;
                 }
-                case "back" -> {
-                    if (args.length < 2) return false;
-                    ApiTeam team = ApiManager.getInstance().getTeam(Integer.parseInt(args[1]));
-                    team.backToOrigin();
+                if (args.length < 3) {
+                    sender.sendMessage("/team setpoint " + args[1] + " <ポイント>");
+                    return false;
+                }
+                try {
+                    int new_point = Integer.parseInt(args[2]);
+                    int old_point = team.getCurrentSession().point;
+                    team.getCurrentSession().point = new_point;
+                    team.onSuccess(new_point - old_point);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage("数値のフォーマットが正しくありません");
                 }
             }
+            case "set_stamina" -> {
+                if (EkidenSys.getInstance().apiMode) {
+                    sender.sendMessage("APIMode がTrueのとき これは実行できません");
+                    return false;
+                }
+                if (args.length < 3) {
+                    sender.sendMessage("/team setpoint " + args[1] + " <スタミナ>");
+                    return false;
+                }
+                try {
+                    team.getCurrentMember().stamina = Integer.parseInt(args[2]);
+                    team.onFail();
+                } catch (NumberFormatException e) {
+                    sender.sendMessage("数値のフォーマットが正しくありません");
+                }
+            }
+            case "tp" -> {
+                if (sender instanceof Player player) {
+                    CameraManManager.getInstance().get(player).setTarget(team, true);
+                }
+            }
+            case "back" -> team.backToOrigin();
         }
         return false;
     }

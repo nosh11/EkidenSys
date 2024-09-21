@@ -1,5 +1,5 @@
 name: EkidenSys
-version: '0.001a'
+version: '0.001b'
 main: com.github.nosh11.ekidensys.EkidenSys
 api-version: '1.20'
 
@@ -10,6 +10,7 @@ commands:
     session:
         description: "Course Plugin daze"
     ekiden:
+        aliases: "ek"
         description: "Ekiden"
     team:
         description: "Team"

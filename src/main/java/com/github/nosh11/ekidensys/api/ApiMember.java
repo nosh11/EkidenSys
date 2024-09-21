@@ -14,6 +14,10 @@ public class ApiMember {
         this.team_id = team_id;
     }
 
+    public String getHeart() {
+        return "♥".repeat(this.stamina);
+    }
+
     @Override
     public String toString() {
         return "Member{" +

@@ -1,2 +1,4 @@
-current_session: 1
-is_running: true
+current_session: 0
+is_running: false
+api_url: "https://ekiden2024.event.techful-programming.com/api/ranking"
+api_mode: false

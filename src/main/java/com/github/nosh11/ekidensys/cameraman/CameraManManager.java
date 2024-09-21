@@ -3,6 +3,7 @@ package com.github.nosh11.ekidensys.cameraman;
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CameraManManager {
@@ -29,5 +30,9 @@ public class CameraManManager {
 
     public CameraMan get(Player p) {
         return get(p.getUniqueId().toString());
+    }
+
+    public List<CameraMan> getAll() {
+        return list.values().stream().toList();
     }
 }

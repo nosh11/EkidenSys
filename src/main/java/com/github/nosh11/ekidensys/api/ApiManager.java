@@ -1,6 +1,8 @@
 package com.github.nosh11.ekidensys.api;
 
 import com.github.nosh11.ekidensys.EkidenSys;
+import org.bukkit.Server;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -11,12 +13,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 
 public class ApiManager {
@@ -28,6 +29,7 @@ public class ApiManager {
     private final Map<Integer, ApiTeam> teams = new HashMap<>();
 
     public ApiTeam getTeam(int team_id) {
+        if (!this.teams.containsKey(team_id)) return null;
         return this.teams.get(team_id);
     }
     public ApiTeam getRandomTeam() {
@@ -39,26 +41,91 @@ public class ApiManager {
     public ApiMember getMember(int member_id) {
         return this.members.get(member_id);
     }
+    public Collection<ApiMember> getMembers() {
+        return this.members.values();
+    }
 
     public Collection<ApiTeam> getTeams() {
         return teams.values();
     }
-    public JSONObject getJSONWithNoApi() {
-        try {
-            String content = Files.readString(Paths.get("plugins/EkidenSys/test.json"));
-            return new JSONObject(content);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+
+    private static final HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(EkidenSys.getInstance().apiUrl))
+            .build();
+    public void update() {
+        try (HttpClient client = HttpClient.newBuilder()
+                .build()){
+            CompletableFuture<HttpResponse<String>> responseFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+            responseFuture.thenAccept(response -> update(new JSONObject(response.body())));
+            responseFuture.exceptionally(e -> {
+                System.out.println("エラーが発生しました: " + e.getMessage());
+                return null;
+            });
         }
     }
 
+    // 試合中 10s毎に呼び出すメソッドです。
+    public void update(JSONObject json) {
+        if (json == null) return;
+
+        // 現在の区間ID
+        int session_id = EkidenSys.getInstance().getCurrentSessionId();
+
+        JSONArray teamsJson = json.getJSONArray("teams");
+        for (int i = 0; i < teamsJson.length(); i++) {
+            JSONObject teamJson = teamsJson.getJSONObject(i);
+            int team_id = teamJson.getInt("id");
+            ApiTeam team = teams.get(team_id);
+            ApiSession session = team.getCurrentSession();
+            ApiMember member = team.getCurrentMember();
+            int member_id = member.id;
+
+            JSONObject membersJson = json.getJSONObject("members");
+            JSONObject memberJson = membersJson.getJSONObject(String.valueOf(member_id));
+            JSONArray sessionsJson = teamJson.getJSONArray("sessions");
+            JSONObject sessionJson = sessionsJson.getJSONObject(session_id);
+
+            int stamina = memberJson.getInt("stamina");
+            int rank = teamJson.getInt("rank");
+            int point = sessionJson.getInt("point");
+
+            if (member.stamina != stamina || session.point != point) {
+                JSONArray levelsJson = sessionJson.getJSONArray("levels");
+                for (int k = 0; k < levelsJson.length(); k++) {
+                    JSONObject levelJson = levelsJson.getJSONObject(k);
+                    session.levels.get(k).time = levelJson.getInt("time");
+                    session.levels.get(k).death = levelJson.getInt("death");
+                    session.levels.get(k).prize = levelJson.getInt("prize");
+                }
+                if (member.stamina != stamina) {
+                    member.stamina = stamina;
+                    team.onFail();
+                }
+                if (session.point != point) {
+                    int added_point = point - session.point;
+                    session.point = point;
+                    new BukkitRunnable() {
+
+                        @Override
+                        public void run() {
+                            team.onSuccess(added_point);
+                        }
+                    }.runTaskLater(EkidenSys.getInstance(), 1L);
+                }
+            }
+            // 順位の変動
+            if (team.rank != rank) {
+                team.onRankChanged(team.rank, rank);
+                team.rank = rank;
+            }
+        }
+    }
 
     private static JSONObject sendRequest() {
         try (HttpClient client = HttpClient.newBuilder()
-                .build()){
-            EkidenSys.getInstance().getLogger().info("ooo");
+                .build()) {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://ekiden2024.event.techful-programming.com/api/ranking"))
+                    .uri(URI.create(EkidenSys.getInstance().apiUrl))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -76,62 +143,11 @@ public class ApiManager {
         }
     }
 
-    // 試合中 10s毎に呼び出すメソッドです。
-    public void update() {
-        JSONObject json;
-        if (EkidenSys.getInstance().apimode)
-            json = sendRequest();
-        else
-            json = getJSONWithNoApi();
-        if (json == null) return;
-        JSONArray teamsJson = json.getJSONArray("teams");
-
-        // 現在の区間ID
-        int session_id = EkidenSys.getInstance().getCurrentSessionId();
-
-        for (int i = 0; i < teamsJson.length(); i++) {
-            JSONObject teamJson = teamsJson.getJSONObject(i);
-            int team_id = teamJson.getInt("id");
-            ApiTeam team = teams.get(team_id);
-            ApiSession session = team.sessions.get(session_id);
-            ApiMember member = team.getCurrentMember();
-            int member_id = member.id;
-
-            JSONObject membersJson = json.getJSONObject("members");
-            JSONObject memberJson = membersJson.getJSONObject(String.valueOf(member_id));
-            JSONArray sessionsJson = teamJson.getJSONArray("sessions");
-            JSONObject sessionJson = sessionsJson.getJSONObject(session_id);
-
-            int stamina = memberJson.getInt("stamina");
-            int rank = teamJson.getInt("rank");
-            int point = sessionJson.getInt("point");
-
-            // 不正解時 -> スタミナが下がる
-            if (member.stamina != stamina) {
-                member.stamina = stamina;
-                team.onFail();
-            }
-
-            // 順位の変動
-            if (team.rank != rank) {
-                team.rank = rank;
-                team.onFail();
-            }
-
-            // 正解時 -> ポイントが増える
-            if (session.point != point) {
-                session.point = point;
-                team.onSuccess();
-            }
-        }
-    }
-
-
-
     public void reloadAll() {
         JSONObject jsonObject = sendRequest();
         if (jsonObject == null) return;
-
+        members.clear();
+        teams.clear();
         JSONObject membersJson = jsonObject.getJSONObject("members");
         for (String key : membersJson.keySet()) {
             int member_id = Integer.parseInt(key);
